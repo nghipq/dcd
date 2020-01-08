@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>Add an animated icon to the map</title>
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
+    <script src="https://api.tiles.mapbox.com/mapbox-gl-js/v1.6.1/mapbox-gl.js"></script>
+    <link href="https://api.tiles.mapbox.com/mapbox-gl-js/v1.6.1/mapbox-gl.css" rel="stylesheet" />
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        #map {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 400%;
+        }
+
+        ;
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/axios/dist/axios.min.js">  // thư viện axios
+    </script>
+    <script>
+
+        link = 'http://127.0.0.1:5000'
+        var arr = []
+        axios.get(link + '/location')
+            .then(res => {
+                data = res.data // lay du lieu trong link
+                for (i = 1; i <= 4; i++) {
+                    id = JSON.stringify(i)  // chuyen int sang string
+                    newItem = {
+                        id,
+                        cotinates: []
+                    }
+                    for (item of data) {
+                        if (item["sicknessId"] == id) {
+                            newItem["cotinates"].push(item["cotinate"]) // luu toa do 
+                        }
+                    }
+                    arr.push(newItem) // add vao arr
+                }
+            })
+            .then(() => {
+
+                mapboxgl.accessToken = 'pk.eyJ1IjoibmhpZW5odGNlMTQwMTIyIiwiYSI6ImNrNHRpbmdoejA3eXYza3FicGJqcGJuN3kifQ.XGzVQQft_2k-M2RRgHnxlQ';
+                var map = new mapboxgl.Map({
+                    container: 'map',
+                    style: 'mapbox://styles/mapbox/streets-v9',
+                    center: [162, 16], // toa do o viet nam
+                    zoom: 6.6
+                });
+
+                var size = 200; // size nut
+
+                map.on('load', function () {
+                    for (item of arr) {
+
+                        var fea = []
+
+                        for (x of item["cotinates"]) {
+                            obj = {
+                                'type': 'Feature',
+                                'geometry': {
+                                    'type': 'Point',
+                                    'coordinates': x // toa do
+                                }
+                            }
+                            fea.push(obj)
+                        }
+                        map.addSource(item["id"], {
+                            'type': 'geojson',
+                            'data': {
+                                'type': 'FeatureCollection',
+                                'features': fea
+                            }
+                        },
+                        );
+                        color = ["red", "green", "blue", "yellow"]
+                        map.addLayer({
+                            'id': item["id"], // id benh
+                            'type': 'circle',
+                            'source': item["id"], // id benh
+                            'paint': {
+                                'circle-radius': 10,
+                                'circle-color': color[parseInt(item["id"]) - 1] // lay color
+                            },
+                            'filter': ['==', '$type', 'Point']
+                        });
+                    }
+                });
+            });
+    </script>
+
+</body>
+
+</html>
