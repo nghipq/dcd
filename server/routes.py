@@ -135,7 +135,7 @@ def location():
     res = []
 
     for post in all_post:
-        feature = {"sicknessId": str(post["id"]), "cotinate": [
+        feature = {"sicknessId": str(post["sicknessId"]), "cotinate": [
             post["lx"], post["ly"]]}
         res.append(feature)
 
@@ -183,7 +183,7 @@ def diaglogic():
             error="cannot post"
         )
 
-    res = {"sickness": result.name, "description": result.description,
+    res = {"success": True, "sickness": result.name, "description": result.description,
            "solution": result.solution, "isCorrect": isCorrect}
 
     return jsonify(res)

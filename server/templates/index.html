@@ -26,7 +26,7 @@
 
 <body>
     <div id="map"></div>
-
+    
     <script src="https://unpkg.com/axios/dist/axios.min.js">  // thư viện axios
     </script>
     <script>
@@ -36,7 +36,9 @@
         axios.get(link + '/location')
             .then(res => {
                 data = res.data // lay du lieu trong link
-                for (i = 1; i <= 4; i++) {
+                for (i = 1; i <= 5; i++) {
+                    if(i == 4) continue
+
                     id = JSON.stringify(i)  // chuyen int sang string
                     newItem = {
                         id,
@@ -85,7 +87,7 @@
                             }
                         },
                         );
-                        color = ["red", "green", "blue", "yellow"]
+                        color = ["red", "green", "blue", "","yellow"]
                         map.addLayer({
                             'id': item["id"], // id benh
                             'type': 'circle',
