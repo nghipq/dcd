@@ -18,7 +18,6 @@ checkChicken = tf.keras.applications.resnet50.ResNet50(weights='imagenet')
 def load_image(img_path, size,show=False):
 
     img = image.load_img(img_path, target_size=(size, size))
-    # (height, width, channels)
     img_tensor = image.img_to_array(img)
     # (1, height, width, channels), add a dimension because the model expects this shape: (batch_size, height, width, channels)
     img_tensor = np.expand_dims(img_tensor, axis=0)
@@ -136,7 +135,7 @@ def location():
     res = []
 
     for post in all_post:
-        feature = {"sicknessId": str(post["id"]), "cotinate": [
+        feature = {"sicknessId": str(post["sicknessId"]), "cotinate": [
             post["lx"], post["ly"]]}
         res.append(feature)
 
@@ -177,15 +176,15 @@ def diaglogic():
 
     # check prediction
     pred = model.predict(new_image)
-
+    print("Thong so cac benh:", pred)
     rs = max(pred[0])
     if rs < 90:
         isCorrect = False
     pred = pred[0]
     pred = pred.tolist()
     idx = pred.index(rs)
-
-    result = Sickness.query.filter_by(id=idx + 1).first()
+    print("Ket qua tra ve:", idx)
+    result = Sickness.query.filter_by(id=(idx + 1)).first()
 
     newPost = Post(int(idx+1), name, float(request.values["lng"]), float(
         request.values["lat"]), int(request.values["userId"]))
@@ -193,7 +192,7 @@ def diaglogic():
     userAddress = User.query.filter_by(
         id=int(request.values["userId"])).first().address
 
-    print(userAddress)
+    department = Department.query.filter_by(name=userAddress).first()
 
     try:
 
@@ -207,7 +206,7 @@ def diaglogic():
         )
 
     res = {"success": True, "sickness": result.name, "description": result.description,
-           "solution": result.solution, "isCorrect": isCorrect}
+           "solution": result.solution, "isCorrect": isCorrect, "Department": department.phonenumber}
 
     return jsonify(res)
 

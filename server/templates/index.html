@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8" />
     <title>Add an animated icon to the map</title>
-    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script src="https://api.tiles.mapbox.com/mapbox-gl-js/v1.6.1/mapbox-gl.js"></script>
     <link href="https://api.tiles.mapbox.com/mapbox-gl-js/v1.6.1/mapbox-gl.css" rel="stylesheet" />
     <style>
@@ -17,16 +17,59 @@
             position: absolute;
             top: 0;
             bottom: 0;
-            width: 400%;
+            width: 100%;
         }
 
-        ;
+        #note {
+            background-color: #fff;
+            position: fixed;
+            height: 10rem;
+            width: 10rem;
+            border: 0.1rem solid black;
+            margin-left: 86%;
+            margin-top: 33%;
+            
+
+        }
+
+        p {
+            text-align: center;
+            font-size: 1.5rem;
+            margin: 0;
+            padding: 0.5rem;
+        }
+
+        ul {
+            margin: 0;
+            padding: 1rem;
+        }
+
+        li {
+            font-size: 1rem;
+        }
     </style>
 </head>
 
 <body>
     <div id="map"></div>
-
+    <div id="note">
+        <p>Chú thích</p>
+        <hr  size="2px" color="#000" />
+        <ul style=" list-style: none; font-size: 50px;">
+            <li>
+                <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTnQMGgwepFLn_zmnZLz_Js5554VIj8YMj43ShE28_QSgpKtM1D&s" height="15rem" width="15rem"/>
+                 Bệnh đậu gà </li>
+            <li >
+                <img src="https://pngimage.net/wp-content/uploads/2018/06/png-point-7.png" height="15rem" width="15rem"/>
+                Bệnh ILT</li>
+            <li >
+                <img src=" https://img.favpng.com/17/19/6/circle-area-blue-point-angle-png-favpng-UygyW9zh8QUmmsnpnLn4PBj4k_t.jpg" height="15rem" width="15rem"/>   
+            Bệnh newscalte</li>
+            <li>
+                <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSlLnKUPt36FwUMlEASOQHihEBrSXAXVCdy5OBrrFa2IJ5trixV&s" height="15rem" width="15rem"/>   
+                Bệnh marek</li>
+          </ul>
+    </div>
     <script src="https://unpkg.com/axios/dist/axios.min.js">  // thư viện axios
     </script>
     <script>
@@ -36,7 +79,8 @@
         axios.get(link + '/location')
             .then(res => {
                 data = res.data // lay du lieu trong link
-                for (i = 1; i <= 4; i++) {
+                for (i = 1; i <= 5; i++) {
+                    if(i == 4) continue;
                     id = JSON.stringify(i)  // chuyen int sang string
                     newItem = {
                         id,
@@ -56,8 +100,8 @@
                 var map = new mapboxgl.Map({
                     container: 'map',
                     style: 'mapbox://styles/mapbox/streets-v9',
-                    center: [162, 16], // toa do o viet nam
-                    zoom: 6.6
+                    center: [109, 16], // toa do o viet nam
+                    zoom: 4.8
                 });
 
                 var size = 200; // size nut
@@ -85,7 +129,7 @@
                             }
                         },
                         );
-                        color = ["red", "green", "blue", "yellow"]
+                        color = ["red", "yellow", "blue", "","marek"]
                         map.addLayer({
                             'id': item["id"], // id benh
                             'type': 'circle',
@@ -100,7 +144,5 @@
                 });
             });
     </script>
-
 </body>
-
 </html>
