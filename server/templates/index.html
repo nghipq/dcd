@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="utf-8" />
-    <title>Add an animated icon to the map</title>
+    <title>Bản đồ vùng bệnh</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script src="https://api.tiles.mapbox.com/mapbox-gl-js/v1.6.1/mapbox-gl.js"></script>
     <link href="https://api.tiles.mapbox.com/mapbox-gl-js/v1.6.1/mapbox-gl.css" rel="stylesheet" />
@@ -85,12 +85,11 @@
     </select>
     <script src="https://unpkg.com/axios/dist/axios.min.js"></script> // thư viện axios
     <script>
+        var note = document.getElementById("note")
         var select = document.getElementById("select")
-        select.addEventListener("change", () => {
-            var id = select.value
-            if (id == 0) {
-                link = 'http://127.0.0.1:5000'
-                var arr = []
+        var link = 'http://127.0.0.1:5000'
+        function loadAllSickness() {
+            var arr = []
                 axios.get(link + '/location')
                     .then(res => {
                         data = res.data // lay du lieu trong link
@@ -122,9 +121,42 @@
 
                         map.on('load', function () {
                             for (item of arr) {
-
                                 var fea = []
-
+                                for (x of item["cotinates"]) {
+                                    obj = {
+                                        'type': 'Feature',
+                                        'geometry': {
+                                            'type': 'Point',
+                                            'coordinates': x // toa do
+                                        }
+                                    }
+                                    fea.push(obj)
+                                }
+                                map.addSource('point' + item["id"], {
+                                    'type': 'geojson',
+                                    'data': {
+                                        'type': 'FeatureCollection',
+                                        'features': fea
+                                    },
+                                    'cluster': true,
+                                    'clusterMaxZoom': 10,
+                                    'clusterRadius': 50
+                                },
+                                );
+                                color = ["red", "yellow", "blue", "rgba(0,0,0,0)", "green"]
+                                map.addLayer({
+                                    'id': 'point' + item["id"], // id benh
+                                    'type': 'circle',
+                                    'source': 'point' + item["id"], // id benh
+                                    'paint': {
+                                        'circle-radius': 6,
+                                        'circle-color': color[parseInt(item["id"]) - 1]// lay color
+                                    },
+                                    'filter': ['!', ['has', 'point_count']]
+                                });
+                            }
+                            for (item of arr) {
+                                var fea = []
                                 for (x of item["cotinates"]) {
                                     obj = {
                                         'type': 'Feature',
@@ -141,25 +173,77 @@
                                         'type': 'FeatureCollection',
                                         'features': fea
                                     },
+                                    'cluster': true,
+                                    'clusterMaxZoom': 10,
+                                    'clusterRadius': 50
                                 },
                                 );
                                 color = ["red", "yellow", "blue", "rgba(0,0,0,0)", "green"]
-                                console.log(color[parseInt(item["id"]) - 1])
                                 map.addLayer({
                                     'id': item["id"], // id benh
                                     'type': 'circle',
                                     'source': item["id"], // id benh
+                                    'filter': ['has', 'point_count'],
                                     'paint': {
-                                        'circle-radius': 10,
-                                        'circle-color': color[parseInt(item["id"]) - 1] // lay color
+                                        'circle-color': color[parseInt(item["id"] - 1)],
+                                        'circle-radius': [
+                                            'step',
+                                            ['get', 'point_count'],
+                                            20,
+                                            100,
+                                            30,
+                                            750,
+                                            40
+                                        ]
+                                    }
+                                });
+                            }
+                            for (item of arr) {
+                                var fea = []
+                                for (x of item["cotinates"]) {
+                                    obj = {
+                                        'type': 'Feature',
+                                        'geometry': {
+                                            'type': 'Point',
+                                            'coordinates': x // toa do
+                                        }
+                                    }
+                                    fea.push(obj)
+                                }
+                                map.addSource('text' + item["id"], {
+                                    'type': 'geojson',
+                                    'data': {
+                                        'type': 'FeatureCollection',
+                                        'features': fea
                                     },
-                                    'filter': ['==', '$type', 'Point']
+                                    'cluster': true,
+                                    'clusterMaxZoom': 10,
+                                    'clusterRadius': 50
+                                },
+                                );
+
+                                map.addLayer({
+                                    id: 'text' + item["id"],
+                                    type: 'symbol',
+                                    source: 'text' + item["id"],
+                                    filter: ['has', 'point_count'],
+                                    layout: {
+                                        'text-field': '{point_count_abbreviated}',
+                                        'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
+                                        'text-size': 12
+                                    }
                                 });
                             }
                         });
                     });
+        }
+        select.addEventListener("change", () => {
+            var id = select.value
+            if (id == 0) {
+                note.style.display = "block"
+                loadAllSickness()
             } else {
-                link = 'http://127.0.0.1:5000'
+                note.style.display = "none"
                 var arr = []
                 axios.post(link + `/locationId?id=${id}`)
                     .then(res => {
@@ -192,9 +276,41 @@
 
                         map.on('load', function () {
                             for (item of arr) {
-
                                 var fea = []
-
+                                for (x of item["cotinates"]) {
+                                    obj = {
+                                        'type': 'Feature',
+                                        'geometry': {
+                                            'type': 'Point',
+                                            'coordinates': x // toa do
+                                        }
+                                    }
+                                    fea.push(obj)
+                                }
+                                map.addSource('point' + item["id"], {
+                                    'type': 'geojson',
+                                    'data': {
+                                        'type': 'FeatureCollection',
+                                        'features': fea
+                                    },
+                                    'cluster': true,
+                                    'clusterMaxZoom': 10,
+                                    'clusterRadius': 50
+                                },
+                                );
+                                map.addLayer({
+                                    'id': 'point' + item["id"], // id benh
+                                    'type': 'circle',
+                                    'source': 'point' + item["id"], // id benh
+                                    'paint': {
+                                        'circle-radius': 6,
+                                        'circle-color': '#6600ff'// lay color
+                                    },
+                                    'filter': ['!', ['has', 'point_count']]
+                                });
+                            }
+                            for (item of arr) {
+                                var fea = []
                                 for (x of item["cotinates"]) {
                                     obj = {
                                         'type': 'Feature',
@@ -216,21 +332,20 @@
                                     'clusterRadius': 50
                                 },
                                 );
-
                                 map.addLayer({
                                     'id': item["id"], // id benh
                                     'type': 'circle',
                                     'source': item["id"], // id benh
                                     'filter': ['has', 'point_count'],
                                     'paint': {
-                                    'circle-color': [
-                                        'step',
-                                        ['get', 'point_count'],
-                                        '#51bbd6',
-                                        100,
-                                        '#f1f075',
-                                        750,
-                                        '#f28cb1'
+                                        'circle-color': [
+                                            'step',
+                                            ['get', 'point_count'],
+                                            '#cc66ff',
+                                            10,
+                                            '#f1f075',
+                                            15,
+                                            '#ff3333'
                                         ],
                                         'circle-radius': [
                                             'step',
@@ -245,9 +360,7 @@
                                 });
                             }
                             for (item of arr) {
-
                                 var fea = []
-
                                 for (x of item["cotinates"]) {
                                     obj = {
                                         'type': 'Feature',
@@ -276,87 +389,20 @@
                                     source: 'text' + item["id"],
                                     filter: ['has', 'point_count'],
                                     layout: {
-                                    'text-field': '{point_count_abbreviated}',
-                                    'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
-                                    'text-size': 12
+                                        'text-field': '{point_count_abbreviated}',
+                                        'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
+                                        'text-size': 12
                                     }
                                 });
                             }
-                        });
+                        })
                     });
             }
         })
     </script>
     <script>
-        link = 'http://127.0.0.1:5000'
-        var arr = []
-        axios.get(link + '/location')
-            .then(res => {
-                data = res.data // lay du lieu trong link
-                for (i = 1; i <= 5; i++) {
-                    id = JSON.stringify(i)  // chuyen int sang string
-                    newItem = {
-                        id,
-                        cotinates: []
-                    }
-                    for (item of data) {
-                        if (item["sicknessId"] == id) {
-                            newItem["cotinates"].push(item["cotinate"]) // luu toa do 
-                        }
-                    }
-                    arr.push(newItem) // add vao arr
-                }
-            })
-            .then(() => {
-
-                mapboxgl.accessToken = 'pk.eyJ1IjoibmhpZW5odGNlMTQwMTIyIiwiYSI6ImNrNHRpbmdoejA3eXYza3FicGJqcGJuN3kifQ.XGzVQQft_2k-M2RRgHnxlQ';
-                var map = new mapboxgl.Map({
-                    container: 'map',
-                    style: 'mapbox://styles/mapbox/streets-v9',
-                    center: [109, 16], // toa do o viet nam
-                    zoom: 4.8
-                });
-
-                var size = 200; // size nut
-
-                map.on('load', function () {
-                    for (item of arr) {
-
-                        var fea = []
-
-                        for (x of item["cotinates"]) {
-                            obj = {
-                                'type': 'Feature',
-                                'geometry': {
-                                    'type': 'Point',
-                                    'coordinates': x // toa do
-                                }
-                            }
-                            fea.push(obj)
-                        }
-                        map.addSource(item["id"], {
-                            'type': 'geojson',
-                            'data': {
-                                'type': 'FeatureCollection',
-                                'features': fea
-                            }
-                        },
-                        );
-                        color = ["red", "yellow", "blue", "rgba(0,0,0,0)", "green"]
-                        console.log(color[parseInt(item["id"]) - 1])
-                        map.addLayer({
-                            'id': item["id"], // id benh
-                            'type': 'circle',
-                            'source': item["id"], // id benh
-                            'paint': {
-                                'circle-radius': 10,
-                                'circle-color': color[parseInt(item["id"]) - 1] // lay color
-                            },
-                            'filter': ['==', '$type', 'Point']
-                        });
-                    }
-                });
-            });
+        var link = 'http://127.0.0.1:5000'
+        loadAllSickness()
     </script>
 </body>
 
