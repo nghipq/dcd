@@ -141,6 +141,20 @@ def location():
 
     return jsonify(res)
 
+# location
+@app.route("/locationId", methods=["POST"])
+def locationId():
+    posts = Post.query.filter_by(sicknessId = request.values["id"])
+    all_post = postsSchema.dump(posts)
+    res = []
+
+    for post in all_post:
+        feature = {"sicknessId": str(post["sicknessId"]), "cotinate": [
+            post["lx"], post["ly"]]}
+        res.append(feature)
+
+    return jsonify(res)
+
 # diaglogic
 @app.route("/diaglogic", methods=["POST"])
 def diaglogic():
