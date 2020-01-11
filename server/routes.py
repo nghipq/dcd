@@ -3,6 +3,7 @@ import os
 import markdown
 from flask import request, jsonify, render_template
 from server.models import User, Post, Sickness, postsSchema, Department
+from keras.applications.resnet50 import preprocess_input, decode_predictions
 from keras.preprocessing import image
 import numpy as np
 import os
@@ -12,12 +13,11 @@ import h5py
 # load model
 datamodel = h5py.File("E:\\fbiz\\api\chicken.h5", "r")
 model = tf.keras.models.load_model(datamodel)
+checkChicken = tf.keras.applications.resnet50.ResNet50(weights='imagenet')
 
+def load_image(img_path, size,show=False):
 
-def load_image(img_path, show=False):
-
-    img = image.load_img(img_path, target_size=(64, 64))
-    # (height, width, channels)
+    img = image.load_img(img_path, target_size=(size, size))
     img_tensor = image.img_to_array(img)
     # (1, height, width, channels), add a dimension because the model expects this shape: (batch_size, height, width, channels)
     img_tensor = np.expand_dims(img_tensor, axis=0)
@@ -144,25 +144,47 @@ def location():
 # diaglogic
 @app.route("/diaglogic", methods=["POST"])
 def diaglogic():
+    chickenList = ["cock", "hen", "chicken", "bird", "quail", "partridge", "pillow"]
+
     isCorrect = True
     # load a single image
     name = f'{len(Post.query.all())+1}.jpg'
     photo = request.files["photo"]
     photo.save(f'E:/fbiz/api/server/images/{name}')
+    
+    img = image.load_img(f'E:/fbiz/api/server/images/{name}', target_size=(224, 224))
+    x = image.img_to_array(img)
+    x = np.expand_dims(x, axis=0)
+    x = preprocess_input(x)
 
-    new_image = load_image(f'E:/fbiz/api/server/images/{name}')
+        # check prediction
+    predRs = checkChicken.predict(x)
+    predCheck = decode_predictions(predRs, top=3)[0]
+    print(predCheck)
+    check = False
+    for i in predCheck:
+        if i[1] in chickenList: 
+            check = True
+            break
+
+
+    if check == False:
+        res = {"success": False, "mgs": "Vui lòng chụp ảnh rõ hơn hoặc gần đối tượng để có được kết quả chính xác. Xin cám ơn!"}
+        return jsonify(res)
+
+    new_image = load_image(f'E:/fbiz/api/server/images/{name}', 64)
 
     # check prediction
     pred = model.predict(new_image)
-
+    print("Thong so cac benh:", pred)
     rs = max(pred[0])
     if rs < 90:
         isCorrect = False
     pred = pred[0]
     pred = pred.tolist()
     idx = pred.index(rs)
-
-    result = Sickness.query.filter_by(id=idx + 1).first()
+    print("Ket qua tra ve:", idx)
+    result = Sickness.query.filter_by(id=(idx + 1)).first()
 
     newPost = Post(int(idx+1), name, float(request.values["lng"]), float(
         request.values["lat"]), int(request.values["userId"]))
@@ -170,7 +192,7 @@ def diaglogic():
     userAddress = User.query.filter_by(
         id=int(request.values["userId"])).first().address
 
-    print(userAddress)
+    department = Department.query.filter_by(name=userAddress).first()
 
     try:
 
@@ -184,7 +206,7 @@ def diaglogic():
         )
 
     res = {"success": True, "sickness": result.name, "description": result.description,
-           "solution": result.solution, "isCorrect": isCorrect}
+           "solution": result.solution, "isCorrect": isCorrect, "Department": department.phonenumber}
 
     return jsonify(res)
 
