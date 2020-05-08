@@ -1,21 +1,23 @@
 from server import app, db
 import os
 import markdown
-from flask import request, jsonify, render_template
-from server.models import User, Post, Sickness, postsSchema, Department
+from flask import request, jsonify, render_template, send_file
+from server.models import User, Post, Sickness, Store, Product, Bill, postsSchema, productsSchema, billsSchema,Department
 from keras.applications.resnet50 import preprocess_input, decode_predictions
 from keras.preprocessing import image
 import numpy as np
-import os
+import cv2
 import tensorflow as tf
 import h5py
+from server.unity import *
 
 # load model
 datamodel = h5py.File("E:\\fbiz\\api\chicken.h5", "r")
 model = tf.keras.models.load_model(datamodel)
 checkChicken = tf.keras.applications.resnet50.ResNet50(weights='imagenet')
 
-def load_image(img_path, size,show=False):
+
+def load_image(img_path, size, show=False):
 
     img = image.load_img(img_path, target_size=(size, size))
     img_tensor = image.img_to_array(img)
@@ -26,13 +28,14 @@ def load_image(img_path, size,show=False):
 
     return img_tensor
 
+##API
 # home
 @app.route("/", methods=["GET"])
 def home():
     """Present some documentation"""
 
     # Open the README file
-    with open(os.path.dirname(app.root_path) + '/README.md', 'r') as markdown_file:
+    with open(os.path.dirname(app.root_path) + '/Document.md', 'r') as markdown_file:
 
         # Read the content of the file
         content = markdown_file.read()
@@ -40,10 +43,16 @@ def home():
         # Convert to HTML
         return markdown.markdown(content)
 
-# register
-@app.route("/register", methods=["POST"])
+# load image
+@app.route("/images", methods=["GET"])
+def send_images():
+    image_name = get_queries(request)["image"]
+    return send_file(f"./images/product/{image_name}", mimetype='image/gif')
+
+# user register
+@app.route("/user/auth/register", methods=["POST"])
 def register():
-    data = request.values
+    data = request.json
     try:
         username = data.get("username")
         email = data.get("email")
@@ -103,13 +112,13 @@ def register():
             error="cannot register"
         )
 
-# login
-@app.route("/login", methods=["POST"])
+# user login
+@app.route("/user/auth/login", methods=["POST"])
 def login():
-    email = request.values.get("email")
+    email = request.json.get("email")
     dataEmail = User.query.filter_by(email=email).first()
     if dataEmail:
-        password = request.values.get("password")
+        password = request.json.get("password")
         if password == dataEmail.password:
             return jsonify(
                 success=True,
@@ -125,6 +134,297 @@ def login():
         return jsonify(
             success=False,
             error="This email does not exist"
+        )
+
+# store register
+@app.route("/store/auth/register", methods=["POST"])
+def store_register():
+    data = request.json
+    print(data)
+    try:
+        name = data.get("name")
+        email = data.get("email")
+        phonenumber = data.get("phonenumber")
+        try:
+            existName = Store.query.filter_by(name=name).first()
+            if existName:
+                return jsonify(
+                    success=False,
+                    error="This name is alrealy exist"
+                )
+
+            existEmail = Store.query.filter_by(email=email).first()
+            if existEmail:
+                return jsonify(
+                    success=False,
+                    error="This email is alrealy exist"
+                )
+
+            existPhonenumber = User.query.filter_by(username=username).first()
+            if existPhonenumber:
+                return jsonify(
+                    success=False,
+                    error="This phonenumber is alrealy exist"
+                )
+        except:
+            pass
+
+        address = data.get("address")
+        lx = data.get("lx")
+        ly = data.get("ly")
+
+        password = data.get("password")
+        confirm_password = data.get("confirm_password")
+
+        if password != confirm_password:
+            return jsonify(
+                success=False,
+                error="password not match"
+            )
+
+        newStore = Store(name, password, address, lx, ly, phonenumber, email)
+        try:
+            db.session.add(newStore)
+            db.session.commit()
+
+            return jsonify(
+                success=True,
+            )
+        except:
+            return jsonify(
+                success=False,
+                error="cannot register"
+            )
+
+    except:
+        return jsonify(
+            success=False,
+            error="cannot register"
+        )
+
+# store login
+@app.route("/store/auth/login", methods=["POST"])
+def storeLogin():
+    data = request.json
+    email = data.get("email")
+    dataEmail = Store.query.filter_by(email=email).first()
+    if dataEmail:
+        password = data.get("password")
+        if password == dataEmail.password:
+            return jsonify(
+                success=True,
+                username=dataEmail.name,
+                id=dataEmail.id
+            )
+        else:
+            return jsonify(
+                success=False,
+                error="password is not correct"
+            )
+    else:
+        return jsonify(
+            success=False,
+            error="This email does not exist"
+        )
+
+# insert product
+@app.route("/store/product/create", methods=["POST"])
+def create_product():
+    data = request.json
+    try:
+        name = data.get("name")
+        store = data.get("storeId")
+        brand = data.get("brand")
+        productExist = Product.query.filter_by(name=name, store=store, brand=brand).first()
+
+        if productExist:
+            return jsonify(
+                success=False,
+                error="This product is alrealy exist"
+            )
+        else:
+            description = data.get("description")
+            price = data.get("price")
+            quantity = data.get("quantity")
+            types = data.get("types")
+
+            try:
+                imagesName = f"{len(os.listdir('./images/products'))}.jpg"
+                imagesFile = request.files["photo"]
+                imagesFile.save(f"./images/products/{imagesName}")
+            except:
+                imagesName = "default.jpg"
+               
+            newProduct = Product(name, description, price, quantity, store, imagesName, types, brand)
+
+            try:
+                db.session.add(newProduct)
+                db.session.commit()
+
+                return jsonify(
+                    success=True,
+                )
+            
+            except:
+                return jsonify(
+                    success=False,
+                    error="cannot create this product"
+                )
+    except:
+        return jsonify(
+            success=False,
+            error="cannot create this product"
+        )
+
+
+# delete product
+@app.route("/store/product/delete", methods = ["GET"])
+def delete_product():
+    productId = get_queries(request)["id"]
+
+    try:
+        product = Product.query.filter_by(id = productId)
+        if not product:
+            return jsonify(
+                        success = False,
+                        error = "Cannot find this product"
+                    )
+        product.delete()
+        db.session.commit()
+
+        return jsonify(
+            success = True
+        )
+    except:
+        return jsonify(
+            success = False,
+            error = "Cannot delete this product"
+        )
+
+# update product
+@app.route("/store/product/update", methods = ["POST"])
+def update_product():
+    data = request.json
+    try:
+        id = data.get("id")
+        product = Product.query.filter_by(id = id).first()
+        if product:
+            name = data.get("name")
+            description = data.get("description")
+            price = data.get("price")
+            quantity = data.get("quantity")
+            
+            try:
+                product.name = name
+                product.description = description
+                product.price = price
+                product.quantity = quantity
+                db.session.commit()
+
+                return jsonify(
+                    success = True
+                )
+            except:
+                return jsonify(
+                    success = False,
+                    error = "Cannot update this product"
+                )
+        else:
+            return jsonify(
+                success = False,
+                error = "Product not found"
+            ) 
+    except:
+        return jsonify(
+            success = False,
+            error = "Cannot update this product!"
+        )    
+
+# get product
+@app.route("/user/product/getProducts", methods = ["GET"])
+def getAll_product():
+    queries = get_queries(request)
+    products = Product.query.all()
+    all_products = format_products_list(filter_arr_by_queries(productsSchema.dump(products), queries))
+    
+    if len(all_products) == 0:
+        return jsonify(
+            message = "don't have any products!"
+        )
+    else:
+        return jsonify(all_products)
+
+# create bill
+@app.route("/store/bill/create", methods = ["POST"])
+def create_bill():
+    data = request.json
+    userId = data.get("userId")
+    address = data.get("address")
+    lx = data.get("lx")
+    ly = data.get("ly")
+    phone = data.get("phone")
+    products = data.get("products")
+    products = products.split(",")
+    numberStoreProduct = dict()
+
+    for product in products:
+        storeId = Product.query.filter_by(id = int(product[0])).first().store
+        numberStoreProduct[storeId] = numberStoreProduct.get(storeId, list()) + [product]
+
+    for store, items in numberStoreProduct.items():
+        storeId = int(store)
+        totalPrice = 0
+        for item in items:
+            pId = int(item[0])
+            quantity = int(item[2:])
+            p = Product.query.filter_by(id = pId).first()
+            price = float(p.price)
+
+            totalPrice += price * quantity
+        try:
+            newBill = Bill(userId, storeId, ",".join(items), str(totalPrice), lx, ly, address, phone)
+            db.session.add(newBill)
+            db.session.commit()
+
+        except:
+            return jsonify(
+                success = False,
+                error = "cannot create bill"
+            )
+    return jsonify(
+                success = True
+            )
+
+# get bill
+@app.route("/store/bill/getBills", methods = ["GET"])
+def get_all_bill():
+    queries = get_queries(request)
+    try:
+        all_bill = format_bills_list(filter_arr_by_queries(billsSchema.dump(Bill.query.all()), queries))       
+        return jsonify(all_bill)
+
+    except:
+        return jsonify(
+            success = False,
+            error = "cannot show bill list"
+        )
+
+# update bill by id
+@app.route("/store/bill/update", methods = ["POST"])
+def update_bill():
+    data = request.json
+    try:
+        bill = Bill.query.filter_by(id = data.get("id")).first()
+        bill.isCheck = data.get("check")
+        db.session.commit()
+
+        return jsonify(
+            success = True
+        )
+    except:
+        return jsonify(
+            success = False,
+            error = "cannot updata"
         )
 
 # location
@@ -150,9 +450,9 @@ def diaglogic():
     # load a single image
     name = f'{len(Post.query.all())+1}.jpg'
     photo = request.files["photo"]
-    photo.save(f'E:/fbiz/api/server/images/{name}')
+    photo.save(f'E:/fbiz/api/server/images/data/{name}')
     
-    img = image.load_img(f'E:/fbiz/api/server/images/{name}', target_size=(224, 224))
+    img = image.load_img(f'E:/fbiz/api/server/images/data/{name}', target_size=(224, 224))
     x = image.img_to_array(img)
     x = np.expand_dims(x, axis=0)
     x = preprocess_input(x)
@@ -172,7 +472,7 @@ def diaglogic():
         res = {"success": False, "mgs": "Vui lòng chụp ảnh rõ hơn hoặc gần đối tượng để có được kết quả chính xác. Xin cám ơn!"}
         return jsonify(res)
 
-    new_image = load_image(f'E:/fbiz/api/server/images/{name}', 64)
+    new_image = load_image(f'E:/fbiz/api/server/images/data/{name}', 64)
 
     # check prediction
     pred = model.predict(new_image)
@@ -232,7 +532,23 @@ def department():
 
     return "success"
 
-# map
-@app.route("/maps")
-def maps():
+##WEB SERVER
+# home
+@app.route("/web/")
+def home_page():
     return render_template("index.html")
+
+# user
+@app.route("/web/user")
+def user_page():
+    return render_template("user.html")
+
+#map
+@app.route("/web/maps")
+def maps_page():
+    return render_template("map.html")
+
+#chat
+@app.route("/web/chat")
+def chat_page():
+    return render_template("chat.html")

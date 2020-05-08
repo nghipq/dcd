@@ -1,25 +1,10 @@
-
-#FARM API
-##Usage
-
-All response will have the form
-```json
-{
-    "data": "Mixed type holding the content of the response",
-    "message": "Description of what happened"
-}
-```
-
-Subsequent response definitions will only detail the expected value of the `data field`
-
 ### Registering new user
 
 **Definite**
 
-`POST /user/register`
+`POST /user/auth/register`
 
-**Arguments**
-
+**Requests**
 - `"username": String`
 - `"email": String`
 - `"phonenumber": String`
@@ -31,23 +16,21 @@ Subsequent response definitions will only detail the expected value of the `data
 
 - `201 Created` on success
 
+
 ```
     json {
         "success": True
     }
 ```
-
 ### User login
 
 **Definite**
 
-`POST /user/login`
+`POST /user/auth/login`
 
 **Arguments**
-
 - `"email": String`
 - `"password": String`
-
 **Response**
 
 - `201 Created` on success
@@ -59,20 +42,21 @@ Subsequent response definitions will only detail the expected value of the `data
         "id": Integer 
     }
 ```
-
 ### Store register
 **Definite**
 
-`POST /store/register`
+`POST /store/auth/register`
 
 **Arguments**
 
 - `"name: String"`
 - `"email: String"`
-- `"password: String"`
-- `"confirm_password: String"`
 - `"phonenumber: String"`
 - `"address: String"`
+- `"lx": float`
+- `"ly": float`
+- `"password: String"`
+- `"confirm_password: String"`
 
 **Response**
 
@@ -83,12 +67,11 @@ Subsequent response definitions will only detail the expected value of the `data
         "success": True
     }
 ```
-
 ### Store login
 
 **Definite**
 
-`POST /store/login`
+`POST /store/auth/login`
 
 **Arguments**
 
@@ -96,7 +79,6 @@ Subsequent response definitions will only detail the expected value of the `data
 - `"password": String`
 
 **Response**
-
 - `201 Created` on success
 
 ```
@@ -110,18 +92,19 @@ Subsequent response definitions will only detail the expected value of the `data
 ### Insert new product
 
 **Definite**
-`POST /store/createProduct`
+`POST /store/product/create`
 
 **Arguments**
 
 - `"name: String"`
+- `"storeID: Integer"`
 - `"description: String"`
 - `"price: String"`
 - `"quantity: String"`
-- `"store: Integer"`
+- `"types: String"`
+- `"photo: file"`
 
 **Responses**
-
 - `201 Created` on success
 
 ```
@@ -133,7 +116,7 @@ Subsequent response definitions will only detail the expected value of the `data
 ### Delete product by id
 
 ***Definites**
-`POST /store/deleteProduct`
+`GET /store/product/delete`
 
 **Arguments**
 - `"id: Integer"`
@@ -150,7 +133,7 @@ Subsequent response definitions will only detail the expected value of the `data
 ### Update product by id
 
 **Definite**
-`POST /store/updateProduct`
+`POST /store/product/update`
 
 **Arguments**
 
@@ -168,28 +151,56 @@ Subsequent response definitions will only detail the expected value of the `data
     }
 ```
 
-### Diaglogic sickness
+### get product
 **Definite**
-
-`POST /diaglogic`
-
-**Arguments**
-
-- `"image": String`
-- `"user_id": Integer`
-- `"lx": float`
-- `"ly": float`
+`GET /user/product/getProducts`
 
 **Response**
-
 - `201 Created` on success
-
 ```
-    json {
-        "sickness": String,
-        "description": String,
-        "solution": String,
-        "accurancy": String
+    json{
+        allproduct
+    }
+```
+
+### create bill
+**Definite**
+`POST /store/bill/create`
+**Arguments**
+- `"userId": integer`
+- `"address": String`
+- `"lx": float`
+- `"ly" : float`
+- `"phone": String`
+- `"products": String`
+**Response**
+- `201 Created` on success
+```
+    json{
+        success: True
+    }
+```
+### get bill
+**Definite**
+` GET /store/bill/getBills`
+**Response**
+- `201 Created` on success
+```
+    json{
+        allbill
+    }
+```
+### update bill by id
+**Definite**
+`POST /store/bill/update`
+**Arguments**
+- `"id": integer`
+- `"check": integer`
+**Response**
+- `201 Created` on success
+```
+    json{
+         success: True
     }
 ```
 
@@ -212,3 +223,53 @@ Subsequent response definitions will only detail the expected value of the `data
         }
     ]
 ```
+### Diaglogic sickness
+**Definite**
+
+`POST /diaglogic`
+
+**Arguments**
+
+- `"image": String`
+- `"user_id": Integer`
+- `"lx": float`
+- `"ly": float`
+
+**Response**
+- `201 Created` on success
+
+```
+    json {
+        "sickness": String,
+        "description": String,
+        "solution": String,
+        "accurancy": String
+    }
+```
+### sickness
+**Definite**
+`POST /sickness`
+**Arguments**
+`"name": String`
+`"description": String`
+`"solution": String`
+**Response**
+- `201 Created` on success
+
+```
+    json {
+        success: true
+    }
+```
+
+### department
+**Definite**
+`POST /department`
+**Arguments**
+`"name": String`
+`"address": String`
+`"phonenumber": String`
+**Response**
+- `201 Created` on success`
+
+
